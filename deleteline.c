@@ -1,45 +1,98 @@
 #include <stdio.h>
-#include<string.h>
-#include<stdlib.h>
-int main()
+#include <stdlib.h>
+
+#define BUFFER_SIZE 1000
+
+/* Function declarations */
+void deleteLine(FILE *srcFile, FILE *tempFile, const int line);
+void printFile(FILE *fptr);
+
+
+int main(int argc, char* argv[])
 {
-int delete_line,count=0,i,pos;
-char filename[1000];
-char fname[100];
-FILE *fp;
-printf("enter the deleting line number");
-scanf("%d",&delete_line);
-printf("enter or copy the file location");
-scanf("%s",&fname);
-fp = fopen("fname","r+");
-if(fp==NULL)
-{
-    printf("error");
-    exit(1);
-}
-else
-{
-while(fgets(filename,strlen(filename),fp)!=NULL){
-    count++;
-    if(count==delete_line)
+    FILE *srcFile;
+    FILE *tempFile;
+
+
+    int line = atoi(argv[1]) ;
+
+    
+
+    /* Try to open file */
+    srcFile  = fopen(argv[2], "r");
+    tempFile = fopen("delete-line.tmp", "w");
+
+
+    /* Exit if file not opened successfully */
+    if (srcFile == NULL || tempFile == NULL)
     {
-        break;
-        i=ftell(fp);
+        printf("Unable to open file.\n");
+        printf("Please check you have read/write previleges.\n");
+
+        exit(EXIT_FAILURE);
     }
-    else if(delete_line==1)
-    {
-        printf("You've already read past it when you set i th position\n");
-        printf("so it is not work for first line");
-    }
+
+
+
+    printf("\nFile contents before removing line.\n\n");
+    printFile(srcFile);
+
+
+    // Move src file pointer to beginning
+    rewind(srcFile);
+
+    // Delete given line from file.
+    deleteLine(srcFile, tempFile, line);
+
+
+    /* Close all open files */
+    fclose(srcFile);
+    fclose(tempFile);
+
+
+    /* Delete src file and rename temp file as src */
+    remove(argv[2]);
+    rename("delete-line.tmp", argv[2]);
+
+
+    printf("\n\n\nFile contents after removing %d line.\n\n", line);
+
+    // Open source file and print its contents
+    srcFile = fopen(argv[2], "r");
+    printFile(srcFile);
+    fclose(srcFile);
+
+    return 0;
 }
 
-while(fgets(filename,60,fp)!=NULL){
-    pos=ftell(fp);
-    fseek(fp,i, SEEK_SET);
-    fprintf(fp,"%s",filename);
-    i=pos;
-    fseek(fp,0,SEEK_CUR);
+
+/**
+ * Print contents of a file.
+ */
+void printFile(FILE *fptr)
+{
+    char ch;
+
+    while((ch = fgetc(fptr)) != EOF)
+        putchar(ch);
 }
-}
-fclose(fp);
+
+
+
+/**
+ * Function to delete a given line from file.
+ */
+void deleteLine(FILE *srcFile, FILE *tempFile, const int line)
+{
+    char buffer[BUFFER_SIZE];
+    int count = 1;
+
+    while ((fgets(buffer, BUFFER_SIZE, srcFile)) != NULL)
+    {
+        /* If current line is not the line user wanted to remove */
+        if (line != count)
+            fputs(buffer, tempFile);
+
+        count++;
+    }
 }
